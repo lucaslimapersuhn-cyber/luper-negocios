@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LUPER negócios — Painel V3</title>
+<style>
+:root{--bg:#0b0b0d;--card:#151519;--line:#292930;--text:#f5f5f7;--muted:#a6a6b0;--accent:#35a7ff;--ok:#35d07f;--warn:#ffbd4a;--danger:#ff5f6d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Arial,sans-serif}
+header{padding:20px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#0b0b0dee;backdrop-filter:blur(12px);z-index:5}
+.brand{font-size:22px;font-weight:800}.brand span{color:var(--accent)}.sub{color:var(--muted);font-size:13px;margin-top:3px}
+.wrap{max-width:1200px;margin:auto;padding:20px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}.metric{font-size:28px;font-weight:800}.label{color:var(--muted);font-size:12px;margin-top:5px}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+input,select{background:#101014;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:11px 12px;outline:none}
+input:focus,select:focus{border-color:var(--accent)}input.search{flex:1;min-width:210px}
+button{border:0;border-radius:9px;padding:10px 13px;font-weight:700;cursor:pointer;background:#25252d;color:#fff}
+button.primary{background:var(--accent);color:#06111a}button.ok{background:var(--ok);color:#07130c}button.danger{background:var(--danger);color:#18070a}
+button.small{padding:7px 9px;font-size:12px}.table{overflow:auto;border:1px solid var(--line);border-radius:14px}
+table{width:100%;border-collapse:collapse;min-width:900px}th,td{text-align:left;padding:12px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-size:11px;text-transform:uppercase}tr:last-child td{border-bottom:0}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:800}.available{background:#263028;color:#79e6a7}.assigned{background:#172c3c;color:#73c7ff}.inactive{background:#32272a;color:#ff9ca5}.active{background:#15372a;color:#69e99b}
+.muted{color:var(--muted)}.actions{display:flex;gap:6px;flex-wrap:wrap}.modal{display:none;position:fixed;inset:0;background:#0009;z-index:10;align-items:center;justify-content:center;padding:16px}.modal.show{display:flex}
+.modalbox{width:min(580px,100%);max-height:90vh;overflow:auto;background:#151519;border:1px solid var(--line);border-radius:16px;padding:20px}.modalbox h2{margin:0 0 14px}
+.form{display:grid;gap:10px}.form label{font-size:12px;color:var(--muted)}.form input,.form select{width:100%}
+.qrbox{text-align:center;background:#fff;border-radius:12px;padding:16px;margin:14px 0}.qrbox img{width:min(300px,100%);height:auto}
+.row{display:flex;gap:8px;align-items:center;justify-content:flex-end}.note{font-size:12px;color:var(--muted);line-height:1.5}
+.empty{text-align:center;padding:30px;color:var(--muted)}.pill{background:#202027;border:1px solid var(--line);padding:5px 9px;border-radius:999px;font-size:11px;color:#ddd}
+.help{border-left:3px solid var(--accent);padding:10px 12px;background:#101820;border-radius:8px;color:#cbd7e2;font-size:12px;line-height:1.5}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.wrap{padding:12px}}
+</style>
+</head>
+<body>
+<header><div class="wrap" style="padding:0 20px"><div class="brand">LUPER <span>negócios</span></div><div class="sub">Painel V3 • QR Codes dinâmicos sem limite de estoque</div></div></header>
+<main class="wrap">
+<div class="grid">
+<div class="card"><div class="metric" id="mTotal">0</div><div class="label">QR Codes gerados</div></div>
+<div class="card"><div class="metric" id="mAvailable">0</div><div class="label">Disponíveis</div></div>
+<div class="card"><div class="metric" id="mAssigned">0</div><div class="label">Atribuídos</div></div>
+<div class="card"><div class="metric" id="mActive">0</div><div class="label">Ativos</div></div>
+<div class="card"><div class="metric" id="mRevenue">R$ 0,00</div><div class="label">Faturamento</div></div>
+<div class="card"><div class="metric" id="mAverage">R$ 0,00</div><div class="label">Ticket médio</div></div>
+</div>
+
+<div class="toolbar">
+<input id="search" class="search" placeholder="Buscar por número ou cliente...">
+<select id="filter"><option value="all">Todos</option><option value="available">Disponíveis</option><option value="assigned">Atribuídos</option><option value="active">Ativos</option><option value="inactive">Inativos</option></select>
+<button class="primary" onclick="openBatch()">＋ Gerar QR Codes</button>
+<button onclick="openCreate()">＋ Cadastrar cliente</button>
+<button onclick="exportData()">Exportar</button>
+<button onclick="importData()">Importar</button>
+</div>
+
+<div class="card" style="margin-bottom:14px">
+<div class="help"><b>QR ilimitado:</b> não existe mais o limite de 100. Gere 10, 100, 1.000, 10.000 ou quantos precisar. A numeração continua automaticamente do último QR criado.</div>
+</div>
+
+<div class="card" style="padding:0"><div class="table"><table><thead><tr><th>ID</th><th>Cliente</th><th>Valor de venda</th><th>Destino</th><th>Status</th><th>Acessos</th><th>Ações</th></tr></thead><tbody id="tbody"></tbody></table></div></div>
+<p class="note" style="margin:12px 2px">💰 O faturamento é calculado pela soma dos valores de venda cadastrados nos clientes. O ticket médio considera somente clientes com valor maior que R$ 0,00.<br><br>Formato dos IDs: LUPER-00001, LUPER-00002... O painel pode continuar criando novos IDs indefinidamente enquanto houver espaço de armazenamento no sistema.</p>
+</main>
+
+<div class="modal" id="modal"><div class="modalbox">
+<h2 id="modalTitle">Configurar QR</h2><div class="form">
+<div><label>Número do QR</label><input id="fId" readonly></div>
+<div><label>Cliente / estabelecimento</label><input id="fClient" placeholder="Ex.: Restaurante do João"></div>
+<div><label>Valor de venda</label><input id="fValue" type="number" min="0" step="0.01" placeholder="Ex.: 49,90"></div>
+<div><label>Destino do QR</label><input id="fUrl" placeholder="https://g.page/r/..."></div>
+<div><label>Status</label><select id="fStatus"><option value="available">Disponível</option><option value="assigned">Atribuído</option><option value="active">Ativo</option><option value="inactive">Inativo</option></select></div>
+<div class="row"><button onclick="closeModal()">Cancelar</button><button class="primary" onclick="saveQR()">Salvar</button></div>
+</div></div></div>
+
+<div class="modal" id="batchModal"><div class="modalbox">
+<h2>Gerar novos QR Codes</h2>
+<div class="form">
+<div><label>Quantidade</label><input id="batchQty" type="number" min="1" max="1000000" value="100"></div>
+<div><label>Número inicial automático</label><input id="batchStart" readonly></div>
+<div class="note">Exemplo: se o último for LUPER-00125 e você gerar 500, o sistema criará do LUPER-00126 ao LUPER-00725.</div>
+<div class="row"><button onclick="closeBatch()">Cancelar</button><button class="primary" onclick="generateBatch()">Gerar</button></div>
+</div></div></div>
+
+<div class="modal" id="qrModal"><div class="modalbox">
+<h2 id="qrTitle">QR LUPER-00001</h2><div class="qrbox"><img id="qrImg" alt="QR Code"></div>
+<p class="note" id="qrInfo"></p><div class="row"><button onclick="closeQR()">Fechar</button><button class="primary" onclick="downloadQR()">Baixar PNG</button></div>
+</div></div>
+
+<input id="fileInput" type="file" accept=".json" style="display:none">
+
+<script>
+const STORAGE='luper_negocios_final';
+let data=load(), currentId=null;
+
+function load(){try{const x=JSON.parse(localStorage.getItem(STORAGE));if(Array.isArray(x))return x}catch(e){} try{const old=JSON.parse(localStorage.getItem('luper_negocios_v3'));if(Array.isArray(old)){const migrated=old.map(x=>({...x,value:Number(x.value)||0}));localStorage.setItem(STORAGE,JSON.stringify(migrated));return migrated}}catch(e){} return []}
+function persist(){localStorage.setItem(STORAGE,JSON.stringify(data));render()}
+function nextNumber(){if(!data.length)return 1;return Math.max(...data.map(x=>Number(x.id)||0))+1}
+function idOf(n){return String(n).padStart(5,'0')}
+function labelStatus(s){return {available:'Disponível',assigned:'Atribuído',active:'Ativo',inactive:'Inativo'}[s]||s}
+function badge(s){return `<span class="badge ${s}">${labelStatus(s)}</span>`}
+function money(v){return new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(Number(v)||0)}
+function escapeHtml(s){return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function render(){
+const q=search.value.toLowerCase().trim(), f=filter.value;
+const rows=data.filter(x=>(!q||x.id.toLowerCase().includes(q)||x.client.toLowerCase().includes(q))&&(f==='all'||x.status===f));
+tbody.innerHTML=rows.length?rows.map(x=>`<tr><td><b>LUPER-${x.id}</b></td><td>${x.client?escapeHtml(x.client):'<span class="muted">—</span>'}</td><td>${x.client?money(x.value):'<span class="muted">—</span>'}</td><td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.url?escapeHtml(x.url):'<span class="muted">Sem destino</span>'}</td><td>${badge(x.status)}</td><td>${x.scans||0}</td><td><div class="actions"><button class="small" onclick="editQR('${x.id}')">Editar</button><button class="small" onclick="showQR('${x.id}')">Ver QR</button>${x.url?`<button class="small ok" onclick="testQR('${x.id}')">Abrir</button>`:''}</div></td></tr>`).join(''):'<tr><td colspan="7" class="empty">Nenhum QR encontrado.</td></tr>';
+const paid=data.filter(x=>Number(x.value)>0);const revenue=paid.reduce((sum,x)=>sum+(Number(x.value)||0),0);const average=paid.length?revenue/paid.length:0;mTotal.textContent=data.length;mAvailable.textContent=data.filter(x=>x.status==='available').length;mAssigned.textContent=data.filter(x=>x.status==='assigned').length;mActive.textContent=data.filter(x=>x.status==='active').length;mRevenue.textContent=money(revenue);mAverage.textContent=money(average);
+}
+function openBatch(){batchStart.value=idOf(nextNumber());batchModal.classList.add('show')}
+function closeBatch(){batchModal.classList.remove('show')}
+function generateBatch(){
+let qty=Math.floor(Number(batchQty.value));if(!qty||qty<1||qty>1000000){alert('Digite uma quantidade entre 1 e 1.000.000.');return}
+const start=nextNumber();
+for(let i=0;i<qty;i++)data.push({id:idOf(start+i),client:'',value:0,url:'',status:'available',scans:0,createdAt:new Date().toISOString()});
+persist();closeBatch();alert(`${qty.toLocaleString('pt-BR')} QR Code(s) criado(s), de LUPER-${idOf(start)} até LUPER-${idOf(start+qty-1)}.`);
+}
+function openCreate(){if(!data.length){openBatch();return}const free=data.find(x=>x.status==='available');if(free)editQR(free.id);else{alert('Não há QR disponíveis. Clique em “Gerar QR Codes”.');openBatch()}}
+function editQR(id){const x=data.find(a=>a.id===id);if(!x)return;currentId=id;modalTitle.textContent='Configurar QR LUPER-'+id;fId.value=id;fClient.value=x.client;fValue.value=(Number(x.value)||0).toFixed(2);fUrl.value=x.url;fStatus.value=x.status;modal.classList.add('show')}
+function saveQR(){const x=data.find(a=>a.id===currentId);if(!x)return;x.client=fClient.value.trim();x.value=Math.max(0,Number(String(fValue.value).replace(',','.'))||0);x.url=fUrl.value.trim();x.status=fStatus.value;if(x.client&&x.url&&x.status==='available')x.status='active';x.updatedAt=new Date().toISOString();persist();closeModal()}
+function closeModal(){modal.classList.remove('show')}
+function permanentUrl(id){return 'https://qr.lupernegocios.com.br/r/'+id}
+function showQR(id){const x=data.find(a=>a.id===id);if(!x)return;currentId=id;qrTitle.textContent='QR LUPER-'+id;const base=permanentUrl(id);qrImg.src='https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=12&data='+encodeURIComponent(base);qrInfo.innerHTML=`<b>Endereço permanente:</b><br>${escapeHtml(base)}<br><br><b>Destino atual:</b><br>${x.url?escapeHtml(x.url):'<span class="muted">ainda não configurado</span>'}`;qrModal.classList.add('show')}
+function closeQR(){qrModal.classList.remove('show')}
+function downloadQR(){const a=document.createElement('a');a.href=qrImg.src;a.download='LUPER-'+currentId+'.png';a.target='_blank';a.click()}
+function testQR(id){const x=data.find(a=>a.id===id);if(!x.url)return;x.scans=(x.scans||0)+1;persist();window.open(x.url,'_blank')}
+function exportData(){const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='luper_negocios_v3_backup.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(){fileInput.value='';fileInput.onchange=()=>{const file=fileInput.files[0];if(!file)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!Array.isArray(x))throw 0;if(confirm(`Importar ${x.length.toLocaleString('pt-BR')} registros e substituir os atuais?`)){data=x;persist()}}catch(e){alert('Arquivo inválido.')}};r.readAsText(file)};fileInput.click()}
+search.addEventListener('input',render);filter.addEventListener('change',render);render();
+</script>
+</body>
+</html>
